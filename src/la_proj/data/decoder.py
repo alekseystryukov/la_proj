@@ -12,17 +12,47 @@ def decode_msg(msg):
     return result
 
 
-def import_default(value):
-    pass
+def import_string(value):
+    return value.strip('"')
 
 
 def import_float(value):
-    if not value.startswith("0x"):
-        return value
     return struct.unpack('!f', bytes.fromhex(value[2:]))[0]
 
 
-fields = (
+def import_int(value):
+    return int(value)
+
+
+def import_datetime(value):
+    try:
+        dt = datetime.fromtimestamp(int(value) / 2000)
+    except ValueError:
+        pass
+    else:
+        return dt
+
+
+def default_import(value):
+    if value.startswith('"'):
+        return import_string(value)
+    elif value.startswith("0x"):
+        return import_float(value)
+    dt = import_datetime(value)
+    if dt is not None and 2019 < dt.year < 2050:
+        return dt
+    return value
+
+
+def import_quote_type(value):
+    return QUOTE_TYPES.get(value, value)
+
+
+def import_marker_hours(value):
+    return MARKET_HOURS.get(value, value)
+
+
+FIELDS = (
     "id",
     "price",
     "time",
@@ -58,30 +88,56 @@ fields = (
     "marketcap",
 )
 
+IMPORT_FUNCTIONS = {
+    "id": import_string,
+    "price": import_float,
+    "time": import_datetime,
+    "exchange": import_string,
+    "changePercent": import_float,
+    "change": import_float,
+    "dayVolume": import_int,
+    "quoteType": import_quote_type,
+    "marketHours": import_marker_hours,
+}
 
-def normalize_value(value):
-    if value.startswith('"'):
-        return value.strip('"')
-    elif value.startswith("0x"):
-        return struct.unpack('!f', bytes.fromhex(value[2:]))[0]
+QUOTE_TYPES = {
+    "0": "NONE",
+    "5": "ALTSYMBOL",
+    "7": "HEARTBEAT",
+    "8": "EQUITY",
+    "9": "INDEX",
+    "11": "MUTUALFUND",
+    "12": "MONEYMARKET",
+    "13": "OPTION",
+    "14": "CURRENCY",
+    "15": "WARRANT",
+    "17": "BOND",
+    "18": "FUTURE",
+    "20": "ETF",
+    "23": "COMMODITY",
+    "28": "ECNQUOTE",
+    "41": "CRYPTOCURRENCY",
+    "42": "INDICATOR",
+    "1000": "INDUSTRY",
+}
 
-    try:
-        dt = datetime.fromtimestamp(int(value) / 2000)
-    except ValueError:
-        pass
-    else:
-        if 2019 < dt.year < 2050:
-            return dt
-
-    return value
+MARKET_HOURS = {
+    "0": "PRE_MARKET",
+    "1": "REGULAR_MARKET",
+    "2": "POST_MARKET",
+    "3": "EXTENDED_HOURS_MARKET",
+}
 
 
 def to_native(msg):
+    decoded = decode_msg(msg)
     obj = {}
-    for line in msg.split("\n"):
+    for line in decoded.split("\n"):
         parts = line.split(": ", 1)
         if len(parts) == 2:
             index, value = parts
-            obj[
-                fields[int(index) - 1]
-            ] = normalize_value(value)
+            field_name = FIELDS[int(index) - 1]
+            import_func = IMPORT_FUNCTIONS.get(field_name, default_import)
+            # print(field_name, value)
+            obj[field_name] = import_func(value)
+    return obj

@@ -1,28 +1,43 @@
 version: '3'
 
 services:
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api
+    ports:
+      - 8080:80
+    logging:
+      driver: "none"
 
-#  api:
-#    hostname: auctions-api
-#    build: .
-#    environment:
-#      - MONGODB_URL=mongodb://root:example@mongo:27017/?replicaSet=rs0
-#      - PYTHONUNBUFFERED=1
-#    volumes:
-#      - ./src:/app
-#    ports:
-#      - 8000:8000
-#    depends_on:
-#      - mongo
-
-  data:
+  api:
+    hostname: api
     build: .
     environment:
       - MONGODB_URL=mongodb://root:example@mongo:27017/?replicaSet=rs0
       - PYTHONUNBUFFERED=1
-    command: la_proj.data.main
     volumes:
       - ./src:/app
+    ports:
+      - 8000:8000
+    depends_on:
+      - mongo
+
+  futures-data:
+    build: .
+    environment:
+      - MONGODB_URL=mongodb://root:example@mongo:27017/?replicaSet=rs0
+      - PYTHONUNBUFFERED=1
+#    entrypoint: ["sleep", "infinity"]
+    command: ["la_proj.data.main", "-s", "^RUT", "^IXIC", "^DJI", "^GSPC"]
+#              "--fake", "True",
+
+    volumes:
+      - ./src/la_proj:/app/la_proj
+      - ./tests:/app/tests
     depends_on:
       - mongo
 
