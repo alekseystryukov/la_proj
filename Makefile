@@ -1,6 +1,9 @@
-.default: update-frontend
+TAG=latest
+build:
+	docker build -t alekseystryukov/la_pro:$(TAG) .
+	docker push alekseystryukov/la_pro:$(TAG)
 
-
-update-frontend:
-	cd frontend && npm run build && cd .. && docker-compose restart frontend
-
+TAG=latest
+build_front:
+	docker build -t alekseystryukov/la_pro_front:$(TAG) ./frontend
+	docker push alekseystryukov/la_pro_front:$(TAG)

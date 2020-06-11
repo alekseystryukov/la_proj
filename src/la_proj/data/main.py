@@ -22,6 +22,12 @@ async def process_message(msg):
     # {"id": "AAPL", "price": 316.70001220703125, "time": "2020-05-20T11:54:17",
     # "exchange": "NMS", "quoteType": "EQUITY", "marketHours": "PRE_MARKET",
     # "changePercent": 1.1368708610534668, "change": 3.55999755859375, "priceHint": "4"}
+
+    # {'id': '^RUT', 'price': 1367.7601318359375,
+    #  'time': datetime.datetime(2020, 6, 11, 18, 50), 'exchange': 'WCB',
+    #  'quoteType': 'INDEX', 'marketHours': 'REGULAR_MARKET',
+    #  'changePercent': -6.789621353149414, 'change': -99.6302490234375,
+    #  'priceHint': '4'}
     try:
         upd_kwargs = dict(
             symbol=line["id"],
